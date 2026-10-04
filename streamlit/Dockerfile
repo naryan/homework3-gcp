@@ -14,4 +14,7 @@ RUN pip install -r requirements.txt
 EXPOSE 8501
 
 # Run streamlit
+# CMD ["streamlit", "run", "hw3.py", "--server.address", "0.0.0.0"]
+# CMD streamlit run hw3.py --server.port=$PORT --server.address=0.0.0.0
+
 CMD ["streamlit", "run", "hw3.py", "--server.address", "0.0.0.0"]

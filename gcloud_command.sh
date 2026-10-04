@@ -71,11 +71,11 @@ gcloud secrets add-iam-policy-binding "$GCP_KEY_SECRET" \
 # TODO 7: which configuration variable holds the FastAPI port?
 # TODO 8: which configuration variable holds the path to your .env file?
 gcloud run deploy "$API_SERVICE" \
-  --source FILL_IN_6 \
+  --source ./fastapi \
   --region "$REGION" \
-  --port=FILL_IN_7 \
+  --port="$API_PORT" \
   --allow-unauthenticated \
-  --env-vars-file=FILL_IN_8 \
+  --env-vars-file="$ENV_FILE" \
   --set-secrets="$SECRET_MOUNT_PATH=$GCP_KEY_SECRET:latest"
 
 # --env-vars-file just loaded GCP_SERVICE_ACCOUNT_KEY as the path on YOUR
@@ -85,7 +85,7 @@ gcloud run deploy "$API_SERVICE" \
 #          the mounted key?
 gcloud run services update "$API_SERVICE" \
   --region "$REGION" \
-  --update-env-vars=GCP_SERVICE_ACCOUNT_KEY=FILL_IN_9
+  --update-env-vars=gcp_service_account_key="$SECRET_MOUNT_PATH"
 
 # =====================================================================
 # STEP 3 -- read back the API server's public URL (provided).
@@ -118,9 +118,9 @@ echo "$API_SERVICE deployed at $API_SERVER_URL"
 # TODO 10: which directory holds the Streamlit Dockerfile?
 # TODO 11: which configuration variable holds the Streamlit port?
 gcloud run deploy "$WEBAPP_SERVICE" \
-  --source FILL_IN_10 \
+  --source ./streamlit \
   --region "$REGION" \
-  --port=FILL_IN_11 \
+  --port="$WEBAPP_PORT" \
   --allow-unauthenticated \
   --env-vars-file="$ENV_FILE" \
   --set-secrets="$SECRET_MOUNT_PATH=$GCP_KEY_SECRET:latest"
@@ -132,7 +132,7 @@ gcloud run deploy "$WEBAPP_SERVICE" \
 #          service exists, which is why STEP 3 reads it back.
 gcloud run services update "$WEBAPP_SERVICE" \
   --region "$REGION" \
-  --update-env-vars=GCP_SERVICE_ACCOUNT_KEY="$SECRET_MOUNT_PATH",API_SERVICE_URL=FILL_IN_12
+  --update-env-vars=gcp_service_account_key="$SECRET_MOUNT_PATH",API_SERVICE_URL="$API_SERVER_URL"
 
 WEBAPP_URL=$(gcloud run services describe "$WEBAPP_SERVICE" \
   --region "$REGION" --format="value(urls[0])")
@@ -157,10 +157,17 @@ fi
 gcloud scheduler jobs "$SCHEDULER_ACTION" http "$SCHEDULER_JOB" \
   --location="$REGION" \
   --schedule="$SCHEDULE" \
-  --uri=FILL_IN_13 \
+  --uri="$API_SERVER_URL/search_and_save/jobs" \
   --http-method=POST \
   --headers="Content-Type=application/json" \
-  --message-body="$MESSAGE_BODY"
+  --message-body='{"job_title": "Data Engineer",
+    "company_dict": {
+                    "Anthropic": "www.anthropic.com/careers/jobs",
+                    "Tesla": "www.tesla.com/careers/search/?site=US",
+                    "OpenAI": "www.openai.com/careers",
+                    "Google": "www.google.com/about/careers/applications/*",
+                    "Microsoft": "careers.microsoft.com/*"
+                     }}'
 
 echo
 echo "Done."
